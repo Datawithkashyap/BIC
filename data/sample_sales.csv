@@ -1,0 +1,11 @@
+order_date,region,category,revenue,profit,units
+2026-01-05,North,Electronics,12400,2480,31
+2026-02-08,South,Furniture,8900,1335,18
+2026-03-12,East,Electronics,15200,3190,38
+2026-04-14,West,Office Supplies,6400,1600,45
+2026-05-19,North,Electronics,17800,3738,44
+2026-06-21,South,Furniture,10200,1632,22
+2026-07-11,East,Office Supplies,7900,1975,52
+2026-08-16,West,Electronics,19500,4095,48
+2026-09-20,North,Furniture,11800,1888,25
+2026-10-25,South,Electronics,22100,4641,55
