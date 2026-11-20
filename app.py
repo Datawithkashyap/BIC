@@ -141,7 +141,7 @@ with tab_eda:
     st.download_button("Download Cleaned CSV", df.to_csv(index=False).encode("utf-8"), f"{active_table}_cleaned.csv", "text/csv")
 
 with tab_viz:
-    viz_tool = st.radio("Visualization Library", ["Plotly (Interactive)", "Seaborn / Matplotlib (Statistical)"], horizontal=True)
+    viz_tool = st.selectbox("Visualization Library", ["Plotly (Interactive)", "Seaborn / Matplotlib (Statistical)"])
     chart_type = st.selectbox("Chart Type", ["Bar Chart", "Line Chart", "Scatter Plot", "Histogram", "Box Plot", "Violin Plot", "Pie / Donut Chart", "Correlation Heatmap"])
     all_cols = df.columns.tolist()
     v_num_cols = df.select_dtypes(include="number").columns.tolist()
@@ -197,7 +197,7 @@ with tab_viz:
         st.pyplot(fig)
 
 with tab_ml:
-    ml_mode = st.radio("ML Workflow", ["Supervised ML + What-If Simulator", "Unsupervised Clustering (K-Means + PCA)", "Time-Series Forecasting (AutoARIMA)"], horizontal=True)
+    ml_mode = st.selectbox("ML Workflow", ["Supervised ML + What-If Simulator", "Unsupervised Clustering (K-Means + PCA)", "Time-Series Forecasting (AutoARIMA)"])
     if ml_mode == "Supervised ML + What-If Simulator":
         target = st.selectbox("Target Column", df.columns.tolist())
         is_clf = (not pd.api.types.is_numeric_dtype(df[target])) or (df[target].nunique() <= 10)
