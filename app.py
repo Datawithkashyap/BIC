@@ -31,13 +31,14 @@ def cached_load(file_bytes: bytes | None, file_name: str) -> pd.DataFrame:
     buf.name = file_name
     return load_dataframe(buf)
 
-uploaded_files = st.sidebar.file_uploader("Upload 1 or more CSV/Excel files", type=["csv", "xlsx"], accept_multiple_files=True)
+uploaded_files = st.file_uploader("Upload 1 or more CSV/Excel files", type=["csv", "xlsx"], accept_multiple_files=True)
 
-st.sidebar.subheader("Data Cleaning & Outlier Controls")
-missing_opt = st.sidebar.selectbox("Missing Values Procedure", [
+with st.expander("Upload & Clean Dataset (CSV / Excel)", expanded=False):
+    st.subheader("Data Cleaning & Outlier Controls")
+    missing_opt = st.selectbox("Missing Values Procedure", [
     "Auto (Skew-Aware)", "Median / Mode", "Mean / Mode", "KNN Imputer", "Drop Missing Rows"
 ])
-outlier_opt = st.sidebar.selectbox("Outlier Management Procedure", [
+    outlier_opt = st.selectbox("Outlier Management Procedure", [
     "IQR Winsorize (Cap 1.5xIQR)", "Z-Score Cap (|Z| > 3)", "Drop Outlier Rows (IQR)", "None"
 ])
 

@@ -9,9 +9,21 @@ from dotenv import load_dotenv
 load_dotenv()
 urllib3_cn.allowed_gai_family = lambda: socket.AF_INET
 
+def _get_secret(key: str, default: str = "") -> str:
+    val = os.getenv(key, "").strip()
+    if val:
+        return val
+    try:
+        import streamlit as st
+        if key in st.secrets:
+            return str(st.secrets[key]).strip()
+    except Exception:
+        pass
+    return default
+
 def _call_ollama(prompt: str, max_tokens: int = 280) -> str:
-    ollama_url = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434/api/generate").replace("localhost", "127.0.0.1")
-    model = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
+    ollama_url = _get_secret("OLLAMA_URL", "http://127.0.0.1:11434/api/generate").replace("localhost", "127.0.0.1")
+    model = _get_secret("OLLAMA_MODEL", "llama3.2:3b")
     r = requests.post(
         ollama_url,
         json={
@@ -36,6 +48,8 @@ def _call_ollama(prompt: str, max_tokens: int = 280) -> str:
     return "".join(chunks)
 
 def warm_ollama() -> bool:
+    if _get_secret("GEMINI_API_KEY") and _get_secret("USE_LOCAL_ONLY", "false").lower() != "true":
+        return False
     try:
         _call_ollama("Reply OK.", max_tokens=5)
         return True
@@ -43,18 +57,33 @@ def warm_ollama() -> bool:
         return False
 
 def _ask_llm(prompt: str) -> str:
-    gemini_key = os.getenv("GEMINI_API_KEY", "").strip()
-    use_local = os.getenv("USE_LOCAL_ONLY", "false").lower() == "true"
+    gemini_key = _get_secret("GEMINI_API_KEY")
+    use_local = _get_secret("USE_LOCAL_ONLY", "false").lower() == "true"
+
     if gemini_key and not use_local:
-        model_name = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_key}"
+        preferred = _get_secret("GEMINI_MODEL", "gemini-flash-latest")
+        candidates = [preferred] + [m for m in ("gemini-flash-latest", "gemini-3.8-flash") if m != preferred]
+        last_err = None
+        for model_name in candidates:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_key}"
+            try:
+                r = requests.post(url, json={"contents": [{"parts": [{"text": prompt}]}]}, timeout=(5, 25))
+                r.raise_for_status()
+                return r.json()["candidates"][0]["content"]["parts"][0]["text"]
+            except requests.exceptions.RequestException as err:
+                last_err = f"{model_name}: {err}"
         try:
-            r = requests.post(url, json={"contents": [{"parts": [{"text": prompt}]}]}, timeout=(5, 12))
-            r.raise_for_status()
-            return r.json()["candidates"][0]["content"]["parts"][0]["text"]
-        except requests.exceptions.RequestException as err:
-            print(f"[BIC WARN] Gemini skipped ({err}). Using local Ollama...")
-    return _call_ollama(prompt)
+            return _call_ollama(prompt)
+        except Exception:
+            raise RuntimeError(f"Gemini API failed ({last_err}). Check GEMINI_API_KEY in Streamlit Secrets.")
+
+    try:
+        return _call_ollama(prompt)
+    except Exception as err:
+        raise RuntimeError(
+            "No GEMINI_API_KEY found in Streamlit Secrets, and local Ollama is unreachable. "
+            "Add GEMINI_API_KEY in Streamlit Cloud Settings -> Secrets."
+        ) from err
 
 def _extract_sql(raw: str) -> str:
     m = re.search(r"```sql\s*(.*?)\s*```", raw, re.DOTALL | re.IGNORECASE)
