@@ -62,7 +62,7 @@ def _ask_llm(prompt: str) -> str:
 
     if gemini_key and not use_local:
         preferred = _get_secret("GEMINI_MODEL", "gemini-flash-latest")
-        candidates = [preferred] + [m for m in ("gemini-flash-latest", "gemini-3.8-flash") if m != preferred]
+        candidates = [preferred] + [m for m in ("gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-3.8-flash", "gemini-3.7-flash", "gemini-flash-latest") if m != preferred]
         last_err = None
         for model_name in candidates:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_key}"
