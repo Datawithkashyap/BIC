@@ -14,8 +14,8 @@ from core.analyst_workbench import (
     run_hypothesis_test, run_kmeans_pca, run_supervised_ml
 )
 
-st.set_page_config(page_title="BIC â€” Business Intelligence Copilot", layout="wide")
-st.title("BIC â€” AI-Powered Business Intelligence Copilot")
+st.set_page_config(page_title="BIC — Business Intelligence Copilot", layout="wide")
+st.title("BIC — AI-Powered Business Intelligence Copilot")
 
 @st.cache_resource
 def init_ollama_once():
@@ -73,7 +73,6 @@ tab_qa, tab_eda, tab_viz, tab_ml, tab_guide = st.tabs([
     "Auto-EDA & Stats",
     "Visualization Studio",
     "ML Lab & Forecasting",
-    "Training Guide",
     "Training Guide",
 ])
 
@@ -138,7 +137,7 @@ with tab_eda:
     col_b = st.selectbox("Variable B", df.columns.tolist(), index=min(1, len(df.columns) - 1), key="hyp_b")
     if st.button("Run Significance Test"):
         res = run_hypothesis_test(df, col_a, col_b)
-        st.write(f"**{res['test']}** â€” Statistic: `{res['statistic']}`, p-value: `{res['p_value']}`")
+        st.write(f"**{res['test']}** — Statistic: `{res['statistic']}`, p-value: `{res['p_value']}`")
         st.success("Statistically significant (p < 0.05)" if res["significant"] else "Not statistically significant (p >= 0.05)")
 
     st.download_button("Download Cleaned CSV", df.to_csv(index=False).encode("utf-8"), f"{active_table}_cleaned.csv", "text/csv")
@@ -252,41 +251,6 @@ with tab_ml:
                 st.plotly_chart(px.line(preds, x="ds", y="AutoARIMA", title=f"{v_col} Forecast"), use_container_width=True)
         else:
             st.warning("Upload a dataset with a date column and a numeric column to forecast.")
-
-with tab_guide:
-    st.subheader("Welcome to BIC (Business Intelligence Copilot)")
-    st.write("Follow these four steps to go from raw spreadsheet data to insights in minutes:")
-
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown(
-            """
-            **Quick Start (4 Steps)**
-            1. **Upload a Dataset:** Open **Upload & Clean Dataset** at the top and drop a `.csv` or `.xlsx` file (up to 200 MB).
-            2. **Inspect Data Health:** Open **Auto-EDA & Stats** to review row counts, missing values, and column types.
-            3. **Ask Questions in Plain English:** Switch to **Ask BIC (Chat + SQL)** and click a starter prompt or type your own question.
-            4. **Visualize & Export:** Build charts in **Visualization Studio**, run forecasts in **ML Lab**, or click **Export Executive Brief (HTML)**.
-            """
-        )
-    with col2:
-        st.markdown(
-            """
-            **Sample Prompts to Try in Ask BIC**
-            - *"Show total revenue and order count by category"*
-            - *"Top 5 products by profit margin"*
-            - *"Find monthly revenue trends over order_date"*
-            - *"Filter to the top 3 regions and sort descending"*
-            """
-        )
-
-    with st.expander("Tips for Best Results"):
-        st.markdown(
-            """
-            - **Use clean column headers:** Simple names like `order_date`, `revenue`, and `category` produce more accurate SQL queries.
-            - **Ask follow-up questions:** After an initial answer, refine it with prompts like *"Now filter only top 3"* or *"Group by month"*.
-            - **Supported files:** CSV and Excel (`.xlsx`) with tabular headers in the first row.
-            """
-        )
 
 with tab_guide:
     st.subheader("Welcome to BIC (Business Intelligence Copilot)")
