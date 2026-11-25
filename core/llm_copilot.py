@@ -1,4 +1,4 @@
-import json
+﻿import json
 import os
 import re
 import socket
@@ -61,13 +61,13 @@ def _ask_llm(prompt: str) -> str:
     use_local = _get_secret("USE_LOCAL_ONLY", "false").lower() == "true"
 
     if gemini_key and not use_local:
-        preferred = _get_secret("GEMINI_MODEL", "gemini-flash-latest")
+        preferred = _get_secret("GEMINI_MODEL", "gemini-2.5-flash")
         candidates = [preferred] + [m for m in ("gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-3.8-flash", "gemini-3.7-flash", "gemini-flash-latest") if m != preferred]
         last_err = None
         for model_name in candidates:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={gemini_key}"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
             try:
-                r = requests.post(url, json={"contents": [{"parts": [{"text": prompt}]}]}, timeout=(5, 25))
+                r = requests.post(url, headers={"Content-Type": "application/json", "x-goog-api-key": gemini_key}, json={"contents": [{"parts": [{"text": prompt}]}]}, timeout=(5, 25))
                 r.raise_for_status()
                 return r.json()["candidates"][0]["content"]["parts"][0]["text"]
             except requests.exceptions.RequestException as err:
@@ -75,7 +75,15 @@ def _ask_llm(prompt: str) -> str:
         try:
             return _call_ollama(prompt)
         except Exception:
-            raise RuntimeError(f"Gemini API failed ({last_err}). Check GEMINI_API_KEY in Streamlit Secrets.")
+            groq_key = _get_secret("GROQ_API_KEY", "")
+        if groq_key:
+            try:
+                gr = requests.post("https://api.groq.com/openai/v1/chat/completions", headers={"Authorization": f"Bearer {groq_key}", "Content-Type": "application/json"}, json={"model": "openai/gpt-oss-120b", "messages": [{"role": "user", "content": prompt}]}, timeout=(5, 25))
+                gr.raise_for_status()
+                return gr.json()["choices"][0]["message"]["content"]
+            except Exception as gerr:
+                last_err = f"{last_err} | groq: {gerr}"
+        raise RuntimeError(f"Gemini API failed ({last_err}). Check GEMINI_API_KEY or GROQ_API_KEY in Streamlit Secrets.")
 
     try:
         return _call_ollama(prompt)
@@ -117,3 +125,4 @@ def summarize_insight(question: str, df_preview: str) -> str:
         "Give a concise 2-3 sentence business insight with exact numbers from the result."
     )
     return _ask_llm(prompt).strip()
+
