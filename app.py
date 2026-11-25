@@ -1,3 +1,7 @@
+﻿$newCode = Get-Clipboard -Raw
+$oldCode = Get-Content .\app.py -Raw
+Set-Content -Path .\app.py -Value ($newCode + "`r`n`r`n" + $oldCode) -Encoding UTF8
+
 import io
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -14,8 +18,8 @@ from core.analyst_workbench import (
     run_hypothesis_test, run_kmeans_pca, run_supervised_ml
 )
 
-st.set_page_config(page_title="BIC — Business Intelligence Copilot", layout="wide")
-st.title("BIC — AI-Powered Business Intelligence Copilot")
+st.set_page_config(page_title="BIC â€” Business Intelligence Copilot", layout="wide")
+st.title("BIC â€” AI-Powered Business Intelligence Copilot")
 
 @st.cache_resource
 def init_ollama_once():
@@ -59,10 +63,10 @@ df = tables[active_table]
 audit_log = audit_logs[active_table]
 schema = get_multi_schema(tables)
 
-st.sidebar.metric("Active Rows × Columns", f"{df.shape[0]} × {df.shape[1]}")
+st.sidebar.metric("Active Rows Ã— Columns", f"{df.shape[0]} Ã— {df.shape[1]}")
 with st.sidebar.expander("Cleaning & Outlier Audit Log"):
     for msg in audit_log:
-        st.write(f"• {msg}")
+        st.write(f"â€¢ {msg}")
 st.sidebar.code(schema)
 
 if "chat_history" not in st.session_state:
@@ -136,7 +140,7 @@ with tab_eda:
     col_b = st.selectbox("Variable B", df.columns.tolist(), index=min(1, len(df.columns) - 1), key="hyp_b")
     if st.button("Run Significance Test"):
         res = run_hypothesis_test(df, col_a, col_b)
-        st.write(f"**{res['test']}** — Statistic: `{res['statistic']}`, p-value: `{res['p_value']}`")
+        st.write(f"**{res['test']}** â€” Statistic: `{res['statistic']}`, p-value: `{res['p_value']}`")
         st.success("Statistically significant (p < 0.05)" if res["significant"] else "Not statistically significant (p >= 0.05)")
 
     st.download_button("Download Cleaned CSV", df.to_csv(index=False).encode("utf-8"), f"{active_table}_cleaned.csv", "text/csv")
