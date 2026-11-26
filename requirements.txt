@@ -10,3 +10,14 @@ scikit-learn
 statsforecast
 requests
 python-dotenv
+fastapi
+uvicorn
+
+
+fastapi
+uvicorn
+
+
+fastapi
+uvicorn
+
