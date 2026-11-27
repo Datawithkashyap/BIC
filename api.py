@@ -1,4 +1,5 @@
 import time
+import pandas as pd
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from core.sql_engine import load_dataframe, get_schema_summary, run_sql
@@ -11,6 +12,10 @@ app = FastAPI(title="BIC Analytics API", version="1.0.0")
 class QueryRequest(BaseModel):
     question: str
     dataset_path: str = "data/sample_sales.csv"
+
+def _df_to_json_records(df: pd.DataFrame) -> list[dict]:
+    clean = df.astype(object).where(df.notna(), None)
+    return clean.to_dict(orient="records")
 
 @app.get("/health")
 def health():
@@ -38,7 +43,7 @@ def query_data(req: QueryRequest):
             "sql": sql,
             "repaired": repaired,
             "latency_s": dt,
-            "rows": res.to_dict(orient="records"),
+            "rows": _df_to_json_records(res),
             "insight": insight,
         }
     except Exception as exc:
@@ -49,4 +54,5 @@ def query_data(req: QueryRequest):
 @app.get("/profile")
 def profile(dataset_path: str = "data/sample_sales.csv"):
     df = load_dataframe(dataset_path)
-    return {"rows": len(df), "columns": profile_dataset(df).to_dict(orient="records")}
+    prof = profile_dataset(df)
+    return {"rows": len(df), "columns": _df_to_json_records(prof)}

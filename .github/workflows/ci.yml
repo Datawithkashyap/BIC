@@ -18,8 +18,9 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt pytest
-      - name: Syntax check & unit tests
+          pip install -r requirements.txt pytest httpx ruff
+      - name: Lint, syntax check & unit tests
         run: |
-          python -m py_compile app.py api.py core/sql_engine.py core/llm_copilot.py core/analyst_workbench.py core/telemetry.py scripts/eval_sql.py
+          ruff check core/ api.py tests/
+          python -m py_compile app.py api.py core/sql_engine.py core/llm_copilot.py core/analyst_workbench.py core/telemetry.py scripts/eval_sql.py scripts/eval_semantic.py
           pytest -v

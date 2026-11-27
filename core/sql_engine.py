@@ -3,6 +3,11 @@ import re
 import duckdb
 import pandas as pd
 
+_FORBIDDEN_SQL = re.compile(
+    r"\b(drop|delete|insert|update|alter|create|copy|attach|detach|pragma|install|load|read_csv|read_parquet|read_json)\b",
+    re.IGNORECASE,
+)
+
 def clean_table_name(filename: str) -> str:
     base = os.path.splitext(os.path.basename(filename))[0]
     cleaned = re.sub(r"[^a-zA-Z0-9_]", "_", base).strip("_").lower()
@@ -37,6 +42,8 @@ def run_sql_multi(tables: dict[str, pd.DataFrame], sql: str) -> pd.DataFrame:
     clean = sql.strip().rstrip(";")
     if not clean.lower().startswith(("select", "with")):
         raise ValueError("Only read-only SELECT/WITH queries are allowed.")
+    if _FORBIDDEN_SQL.search(clean):
+        raise ValueError("Blocked potentially unsafe SQL keyword or file function.")
     con = duckdb.connect(database=":memory:")
     for idx, (tname, tdf) in enumerate(tables.items()):
         con.register(tname, tdf)
