@@ -9,6 +9,7 @@ from core.sql_engine import (
 )
 from core.llm_copilot import generate_sql, repair_sql, summarize_insight, warm_ollama
 from core.forecaster import forecast_metric
+from core.telemetry import get_telemetry_summary
 from core.analyst_workbench import (
     build_executive_report_html, handle_missing_and_outliers, profile_dataset,
     run_hypothesis_test, run_kmeans_pca, run_supervised_ml
@@ -254,35 +255,36 @@ with tab_ml:
 
 with tab_guide:
     st.subheader("Welcome to BIC (Business Intelligence Copilot)")
-    st.write("Follow these four steps to go from raw spreadsheet data to insights in minutes:")
+    st.write("Follow these steps to go from raw spreadsheets to SQL, ML predictions, and executive briefs:")
 
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown(
-            """
-            **Quick Start (4 Steps)**
-            1. **Upload a Dataset:** Open **Upload & Clean Dataset** at the top and drop a `.csv` or `.xlsx` file (up to 200 MB).
-            2. **Inspect Data Health:** Open **Auto-EDA & Stats** to review row counts, missing values, and column types.
-            3. **Ask Questions in Plain English:** Switch to **Ask BIC (Chat + SQL)** and click a starter prompt or type your own question.
-            4. **Visualize & Export:** Build charts in **Visualization Studio**, run forecasts in **ML Lab**, or click **Export Executive Brief (HTML)**.
-            """
-        )
-    with col2:
-        st.markdown(
-            """
-            **Sample Prompts to Try in Ask BIC**
-            - *"Show total revenue and order count by category"*
-            - *"Top 5 products by profit margin"*
-            - *"Find monthly revenue trends over order_date"*
-            - *"Filter to the top 3 regions and sort descending"*
-            """
-        )
+    g_num = df.select_dtypes(include="number").columns.tolist()
+    g_cat = [c for c in df.columns if c not in g_num]
 
-    with st.expander("Tips for Best Results"):
-        st.markdown(
-            """
-            - **Use clean column headers:** Simple names like `order_date`, `revenue`, and `category` produce more accurate SQL queries.
-            - **Ask follow-up questions:** After an initial answer, refine it with prompts like *"Now filter only top 3"* or *"Group by month"*.
-            - **Supported files:** CSV and Excel (`.xlsx`) with tabular headers in the first row.
-            """
-        )
+    c_left, c_right = st.columns(2)
+    with c_left:
+        st.markdown("""
+**Complete BIC Workflow**
+1. **Upload & Clean (`Upload & Clean Dataset`):** Drop one or multiple `.csv`/`.xlsx` files for DuckDB `JOIN`s, then pick **Auto (Skew-Aware)** / **KNN Imputer** and **IQR Winsorize** / **Z-Score** outlier handling.
+2. **Auto-EDA & Stats:** Inspect missing %, skewness, IQR outliers, and run **Welch's t-test, ANOVA, Chi-Square, or Pearson correlation**.
+3. **Ask BIC (Chat + SQL):** Ask follow-up questions, edit SQL inline, rely on `repair_sql()` self-healing, or click **Export Executive Brief (HTML)**.
+4. **Visualization & ML Lab:** Build 8 chart types in **Plotly** or **Seaborn/Matplotlib**, train 5-Fold CV models with the **What-If Simulator**, run **K-Means + PCA**, or forecast with **AutoARIMA**.
+5. **REST API (`api.py`):** Serve `/health`, `/query`, and `/profile` via FastAPI (`uvicorn api:app --port 8000`).
+""")
+    with c_right:
+        st.markdown(f"**Live Sample Prompts for `{active_table}`**")
+        dyn_prompts = [f"Show total row count and summary of {active_table}"]
+        if g_cat and g_num:
+            dyn_prompts.append(f"Show total {g_num[0]} and average {g_num[0]} by {g_cat[0]}")
+            dyn_prompts.append(f"Top 5 {g_cat[0]} by {g_num[0]} descending")
+        if len(g_num) >= 2:
+            dyn_prompts.append(f"Compare {g_num[0]} and {g_num[1]} across {active_table}")
+        for dp in dyn_prompts:
+            st.markdown(f'- *"{dp}"*')
+
+        st.divider()
+        st.markdown("**Live System Telemetry (`logs/query_metrics.csv`)**")
+        t_stats = get_telemetry_summary()
+        t1, t2, t3 = st.columns(3)
+        t1.metric("Logged Queries", t_stats["queries"])
+        t2.metric("Avg Latency", f"{t_stats['avg_latency_s']}s")
+        t3.metric("SQL Repair Rate", f"{t_stats['repair_rate_pct']}%")
